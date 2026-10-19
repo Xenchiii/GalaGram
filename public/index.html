@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<title>GalaGram</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GalaGram">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="loader"><div class="orbit" id="orbit"></div><div class="lword" id="lword"></div><p class="lmsg" id="lmsg">Warming up the press</p><div class="lbar"><i></i></div></div>
+<div id="login" hidden>
+<div class="paper-bg"></div>
+<button class="themebtn" id="ltheme" aria-label="Toggle theme"></button>
+<div class="lcard">
+<div class="lform">
+<div class="dateline"><span id="ldate"></span><span id="led"></span></div>
+<h1 class="mast">GalaGram</h1>
+<p class="tag">The friends' daily edition</p>
+<div class="who" id="who" hidden><span id="wav"></span><div><small>Signing in as</small><b id="wname"></b></div></div>
+<h2>Welcome back</h2>
+<p class="mut">Sign in to read today's edition.</p>
+<form id="lf" autocomplete="on">
+<label>Username<input id="lu" required autocomplete="username" autocapitalize="off" spellcheck="false"></label>
+<label>Password<span class="pw"><input id="lp" type="password" required autocomplete="current-password"><button type="button" id="leye" aria-label="Show password"></button></span></label>
+<p class="err" id="lerr" role="alert"></p>
+<button class="pri wide" type="submit">Sign in</button>
+</form>
+<div class="faces" id="faces"></div>
+</div>
+<div class="lqr" id="qrpane">
+<h2>Use your phone</h2>
+<p class="mut">Open GalaGram on a device that is already signed in, scan this code and tap Approve.</p>
+<div class="qrbox" id="qrbox"></div>
+<p class="wait"><i></i>Waiting for scan</p>
+</div>
+</div>
+</div>
+<div id="app" hidden></div>
+<canvas id="confetti" hidden></canvas>
+<div id="toast"></div>
+<script src="js/qrcode.js"></script>
+<script src="js/jsqr.js"></script>
+<script src="js/leaflet.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
