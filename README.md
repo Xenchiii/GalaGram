@@ -26,4 +26,3 @@ Photos, videos (up to 12 MB) and voicemails are stored in D1 in chunks. The new 
 Screen sharing works in calls on desktop browsers. Uploaded songs play through a real audio player that keeps going across the app.
 
 Maps use OpenStreetMap, Nominatim and OSRM (free public services). Locations are shared only when each person turns sharing on.
-# GalaGram
