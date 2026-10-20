@@ -937,7 +937,10 @@ body:has(.chat) #bubble{display:none}
 .tbw td:nth-child(4){grid-area:cat}
 .tbw td:nth-child(5){grid-area:amt;font-weight:600}
 .tbw td:nth-child(6){grid-area:act;text-align:right}
-.albgrid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
-.avm{padding:0 8px}
-.avn{background:rgba(0,0,0,.45)}
+}
+.mast-s .chv,.sbx{display:none!important}
+@media(max-width:860px){
+.mast-s{cursor:pointer}
+.sbfold span{font-size:0}
+.sbfold span::after{content:"Close menu";font-size:14px}
 }

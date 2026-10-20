@@ -2340,3 +2340,11 @@ if(e.key==='Escape')albumClose();
 else if(e.key==='ArrowLeft')albumStep(-1);
 else if(e.key==='ArrowRight')albumStep(1);
 });
+document.addEventListener('click',e=>{
+  if(!matchMedia('(max-width:860px)').matches)return;
+  if(!e.target.closest('.mast-s,.sbfold'))return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  document.getElementById('side').classList.remove('open');
+  document.querySelector('.scrim')?.classList.remove('open');
+},true);
