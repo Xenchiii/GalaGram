@@ -2183,39 +2183,85 @@ $('#tm').onclick=()=>{ls.set('gg_mode',isDark()?'light':'dark');applyTheme();the
 themeIcon();tickClock();drawTicker();drawOnAir();
 }
 
-const ALB={items:[],more:false,total:0,who:'all',busy:false,full:{},idx:-1};
+Object.assign(P,{
+folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+folderplus:'<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'
+});
+const ALB={items:[],more:false,total:0,who:'all',busy:false,seq:0,full:{},idx:-1,f:null,folders:[]};
 const aDate=s=>s?new Date(s+'T00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'';
 
 function albumView(){
-$('#view').innerHTML=pageHead('Memories','Album',`<div class="vctl"><label class="pri" style="cursor:pointer">${ico('plus')}Add photos<input type="file" id="alf" accept="image/*" multiple hidden></label></div>`)+`<div class="albhead rise"><select id="alw" aria-label="Filter by person"><option value="all">Everyone</option>${USERS.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select><span class="mut" id="alc"></span></div><div class="albgrid" id="alg"></div><div class="vctl" style="margin-top:18px"><button class="ghost" id="alm" hidden>Load more</button></div>`;
+$('#view').innerHTML=pageHead('Memories','Album',`<div class="vctl"><button class="ghost" id="afn">${ico('folderplus')}New folder</button><label class="pri" style="cursor:pointer">${ico('plus')}Add photos and videos<input type="file" id="alf" accept="image/*,video/*" multiple hidden></label></div>`)+`<div id="alh"></div><div class="albhead rise"><select id="alw" aria-label="Filter by person"><option value="all">Everyone</option>${USERS.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select><span class="mut" id="alc"></span></div><div class="fgrid" id="alfd"></div><div class="albgrid" id="alg"></div><div class="vctl" style="margin-top:18px"><button class="ghost" id="alm" hidden>Load more</button></div>`;
 $('#alw').value=ALB.who;
 $('#alw').onchange=e=>{ALB.who=e.target.value;albumLoad(true)};
 $('#alf').onchange=e=>{albumUpload([...e.target.files]);e.target.value=''};
+$('#afn').onclick=()=>albumFolderDlg(null);
 $('#alg').onclick=e=>{const b=e.target.closest('[data-i]');if(b)albumOpen(+b.dataset.i)};
+$('#alfd').onclick=e=>{const b=e.target.closest('[data-fo]');if(b)albumGoto(+b.dataset.fo)};
+$('#alh').onclick=e=>{
+const b=e.target.closest('[data-a]');if(!b)return;
+const fo=ALB.folders.find(x=>x.id===ALB.f);
+if(b.dataset.a==='back')albumGoto(null);
+else if(b.dataset.a==='ren'&&fo)albumFolderDlg(fo);
+else if(b.dataset.a==='fdel'&&fo)albumFolderDel(fo);
+};
 $('#alm').onclick=()=>albumLoad(false);
+albumDraw();
+albumFolders();
+albumLoad(true);
+}
+
+function albumGoto(f){
+ALB.f=f;ALB.items=[];ALB.total=0;ALB.more=false;
 albumDraw();
 albumLoad(true);
 }
 
+async function albumFolders(){
+try{ALB.folders=await api('album/folders')}catch(e){toast(e.message)}
+albumDraw();
+}
+
 async function albumLoad(reset){
-if(ALB.busy)return;
-ALB.busy=true;
+if(!reset&&ALB.busy)return;
+const my=++ALB.seq;ALB.busy=true;
 try{
 const before=reset||!ALB.items.length?0:ALB.items[ALB.items.length-1].id;
-const r=await api('album/list?u='+encodeURIComponent(ALB.who)+'&before='+before);
+const r=await api('album/list?u='+encodeURIComponent(ALB.who)+'&f='+(ALB.f||0)+'&before='+before);
+if(my!==ALB.seq)return;
 ALB.items=reset?r.items:ALB.items.concat(r.items);
 ALB.more=r.more;ALB.total=r.total;
 }catch(e){toast(e.message)}
-ALB.busy=false;
+finally{if(my===ALB.seq)ALB.busy=false}
 albumDraw();
 }
 
 function albumDraw(){
 const g=$('#alg');
 if(!g||S.view!=='album')return;
-$('#alc').textContent=ALB.total+(ALB.total===1?' memory':' memories');
+const f=ALB.f,fo=f!==null?ALB.folders.find(x=>x.id===f):null,mineF=!!fo&&fo.u===ME.id;
+$('#afn').hidden=f!==null;
+$('#alh').innerHTML=f!==null?`<div class="albcrumb rise"><button class="iconbtn" data-a="back" aria-label="Back to folders"><span class="rot90" style="display:flex">${ico('chev')}</span></button><h2>${esc(fo?fo.name:'Folder')}</h2>${mineF?`<button class="iconbtn" data-a="ren" aria-label="Rename folder">${ico('edit')}</button><button class="iconbtn" data-a="fdel" aria-label="Delete folder">${ico('trash')}</button>`:''}</div>`:'';
+$('#alfd').innerHTML=f===null?ALB.folders.map(x=>`<button class="fold" data-fo="${x.id}">${x.th?`<img src="${x.th}" alt="" loading="lazy">`:`<span class="fph">${ico('folder')}</span>`}<span class="fo"><b>${esc(x.name)}</b><small>${x.n} item${x.n===1?'':'s'}</small></span></button>`).join(''):'';
+$('#alc').textContent=ALB.total+(ALB.total===1?' memory':' memories')+(f===null&&ALB.folders.length?' not in a folder':'');
 $('#alm').hidden=!ALB.more;
-g.innerHTML=ALB.items.length?ALB.items.map((x,i)=>`<button class="alp" data-i="${i}" aria-label="Open photo"><img src="${x.th}" alt="" loading="lazy"><span class="alo">${av(byId(x.u),'sm')}<span>${esc(x.cap||aDate(x.md))}</span></span></button>`).join(''):'<div class="empty">No memories yet. Add the first photo.</div>';
+g.innerHTML=ALB.items.length?ALB.items.map((x,i)=>`<button class="alp" data-i="${i}" aria-label="Open ${x.kind==='vid'?'video':'photo'}">${x.th?`<img src="${x.th}" alt="" loading="lazy">`:`<span class="vph">${ico('video')}</span>`}${x.kind==='vid'?`<span class="vbd">${ico('play')}${x.dur?fmtDur(x.dur):'Video'}</span>`:''}<span class="alo">${av(byId(x.u),'sm')}<span>${esc(x.cap||aDate(x.md))}</span></span></button>`).join(''):(ALB.busy?'':`<div class="empty">${f===null&&ALB.folders.length?'Nothing outside the folders.':'Nothing here yet. Add photos and videos.'}</div>`);
+}
+
+function albumFolderDlg(fo){
+const m=modal(`<div class="card"><h2>${fo?'Rename folder':'New folder'}</h2><form id="aff" style="display:grid;gap:14px"><label>Name<input id="afnm" maxlength="40" value="${esc(fo?fo.name:'')}" placeholder="Trip to Baguio" required></label><div class="vctl"><button type="button" class="ghost" id="afc">Cancel</button><button class="pri">${fo?'Save':'Create'}</button></div></form></div>`);
+$('#afc',m).onclick=()=>m.remove();
+$('#aff',m).onsubmit=async e=>{
+e.preventDefault();
+const name=$('#afnm',m).value.trim();if(!name)return;
+try{await api('album/folder',{body:{id:fo?fo.id:0,name}});m.remove();toast(fo?'Folder renamed':'Folder created');albumFolders()}catch(err){toast(err.message)}
+};
+$('#afnm',m).focus();
+}
+
+async function albumFolderDel(fo){
+if(!confirm('Delete the folder "'+fo.name+'"? Its photos and videos are not deleted. They move out of the folder.'))return;
+try{await api('album/folder?id='+fo.id,{method:'DELETE'});toast('Folder deleted');ALB.f=null;await albumFolders();albumLoad(true)}catch(e){toast(e.message)}
 }
 
 async function albumPrep(f){
@@ -2232,18 +2278,29 @@ return{...out,th};
 }
 
 async function albumUpload(files){
-const list=files.filter(f=>f.type.startsWith('image/')).slice(0,20);
-if(!list.length){toast('Choose photos to add');return}
+const list=files.filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/')).slice(0,20);
+if(!list.length){toast('Choose photos or videos to add');return}
+const fid=ALB.f||0;
 let ok=0;
 for(let i=0;i<list.length;i++){
-toast('Adding photo '+(i+1)+' of '+list.length);
+const f=list[i],vid=f.type.startsWith('video/');
+toast((vid?'Uploading video ':'Adding photo ')+(i+1)+' of '+list.length);
 try{
-const p=await albumPrep(list[i]);
-await api('album/add',{body:{...p,cap:'',md:ymd(new Date(list[i].lastModified||Date.now()))}});
+const md=ymd(new Date(f.lastModified||Date.now()));
+if(vid){
+if(f.size>12*1024*1024){toast(f.name+' is over 12 MB');continue}
+const meta=await prepVideo(f);
+const mid=await uploadBlob(f,'album');
+await api('album/add',{body:{kind:'vid',mid,w:meta.w,h:meta.h,dur:meta.dur,th:meta.th,f:fid,md,cap:''}});
+}else{
+const p=await albumPrep(f);
+await api('album/add',{body:{...p,kind:'img',f:fid,md,cap:''}});
+}
 ok++;
 }catch(e){toast(e.message)}
 }
 if(ok)toast(ok+(ok===1?' memory added':' memories added'));
+albumFolders();
 albumLoad(true);
 }
 
@@ -2256,7 +2313,7 @@ document.body.appendChild(o);
 o.onclick=albumClick;
 let tx=0;
 o.ontouchstart=e=>{tx=e.changedTouches[0].clientX};
-o.ontouchend=e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>60)albumStep(d<0?1:-1)};
+o.ontouchend=e=>{if(e.target.closest('video'))return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>60)albumStep(d<0?1:-1)};
 }
 albumShow();
 }
@@ -2267,8 +2324,19 @@ async function albumShow(){
 const o=$('#albv');if(!o)return;
 const x=ALB.items[ALB.idx];
 if(!x){albumClose();return}
-const u=byId(x.u),mine=x.u===ME.id,id=x.id;
-o.innerHTML=`<div class="avh">${av(u,'sm')}<div class="grow"><b>${esc(u.name)}</b><small>${x.md?aDate(x.md)+' · ':''}${ALB.idx+1} of ${ALB.items.length}</small></div><a class="iconbtn" id="avd" aria-label="Download">${ico('dl')}</a>${mine?`<button class="iconbtn" data-a="edit" aria-label="Edit">${ico('edit')}</button><button class="iconbtn" data-a="del" aria-label="Delete">${ico('trash')}</button>`:''}<button class="iconbtn" data-a="x" aria-label="Close">${ico('x')}</button></div><div class="avm"><button class="avn l" data-a="p" aria-label="Previous"${ALB.idx?'':' hidden'}>${ico('chev')}</button><img id="avi" src="${ALB.full[id]||x.th}" alt=""><button class="avn r" data-a="n" aria-label="Next"${ALB.idx<ALB.items.length-1||ALB.more?'':' hidden'}>${ico('chev')}</button></div><div class="avc">${esc(x.cap)}</div>`;
+const u=byId(x.u),mine=x.u===ME.id,id=x.id,vid=x.kind==='vid';
+o.innerHTML=`<div class="avh">${av(u,'sm')}<div class="grow"><b>${esc(u.name)}</b><small>${x.md?aDate(x.md)+' · ':''}${ALB.idx+1} of ${ALB.items.length}</small></div><a class="iconbtn" id="avd" aria-label="Download">${ico('dl')}</a>${mine?`<button class="iconbtn" data-a="move" aria-label="Move to folder">${ico('folder')}</button><button class="iconbtn" data-a="edit" aria-label="Edit">${ico('edit')}</button><button class="iconbtn" data-a="del" aria-label="Delete">${ico('trash')}</button>`:''}<button class="iconbtn" data-a="x" aria-label="Close">${ico('x')}</button></div><div class="avm"><button class="avn l" data-a="p" aria-label="Previous"${ALB.idx?'':' hidden'}>${ico('chev')}</button>${vid?`<div class="avl" id="avl"><span class="spin"></span></div>`:`<img id="avi" src="${ALB.full[id]||x.th}" alt="">`}<button class="avn r" data-a="n" aria-label="Next"${ALB.idx<ALB.items.length-1||ALB.more?'':' hidden'}>${ico('chev')}</button></div><div class="avc">${esc(x.cap)}</div>`;
+if(vid){
+try{
+const url=await mediaUrl(x.mid);
+const cx=ALB.items[ALB.idx];
+if(!cx||cx.id!==id)return;
+const l=$('#avl'),d=$('#avd');
+if(l)l.innerHTML=`<video src="${url}" controls autoplay playsinline></video>`;
+if(d){d.href=url;d.download='galagram-video-'+id}
+}catch(e){toast(e.message)}
+return;
+}
 if(!ALB.full[id]){
 try{
 const r=await api('album/photo?id='+id);
@@ -2293,6 +2361,7 @@ if(a==='x')albumClose();
 else if(a==='p')albumStep(-1);
 else if(a==='n')albumStep(1);
 else if(a==='edit')albumEdit();
+else if(a==='move')albumMove();
 else if(a==='del')albumDel();
 }
 
@@ -2320,9 +2389,24 @@ m.remove();albumShow();albumDraw();
 };
 }
 
+function albumMove(){
+const x=ALB.items[ALB.idx];
+if(!x)return;
+const m=modal(`<div class="card"><h2>Move to folder</h2><label>Folder<select id="amf"><option value="0">No folder</option>${ALB.folders.map(fo=>`<option value="${fo.id}"${fo.id===x.f?' selected':''}>${esc(fo.name)}</option>`).join('')}</select></label><div class="vctl"><button class="ghost" id="amc">Cancel</button><button class="pri" id="ams">Move</button></div></div>`);
+m.style.zIndex=150;
+$('#amc',m).onclick=()=>m.remove();
+$('#ams',m).onclick=async()=>{
+try{
+await api('album/move',{body:{ids:[x.id],f:+$('#amf',m).value}});
+m.remove();albumClose();toast('Moved');
+albumFolders();albumLoad(true);
+}catch(e){toast(e.message)}
+};
+}
+
 async function albumDel(){
 const x=ALB.items[ALB.idx];
-if(!x||!confirm('Delete this memory?'))return;
+if(!x||!confirm('Delete this '+(x.kind==='vid'?'video':'photo')+'?'))return;
 try{
 await api('album/del?id='+x.id,{method:'DELETE'});
 delete ALB.full[x.id];
@@ -2330,7 +2414,7 @@ ALB.items.splice(ALB.idx,1);
 ALB.total=Math.max(0,ALB.total-1);
 if(!ALB.items.length)albumClose();
 else{ALB.idx=Math.min(ALB.idx,ALB.items.length-1);albumShow()}
-albumDraw();
+albumDraw();albumFolders();
 }catch(e){toast(e.message)}
 }
 

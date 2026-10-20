@@ -477,3 +477,5 @@ export async function onRequest(ctx){
 try{return await handle(ctx)}
 catch(e){return J({error:'Server error: '+String(e&&e.message||e)},500)}
 }
+!(ch==='album'||okCh(ch))
+(rows[0].ch!=='album'&&!okCh(rows[0].ch))
