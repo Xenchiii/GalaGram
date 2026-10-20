@@ -2149,3 +2149,194 @@ refreshPush();
 
 setInterval(()=>{const a=document.activeElement;if((a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))||$('.modal'))return;if(S.view==='finance'&&ME)finView();else if(S.view==='calendar'&&ME&&!$('.modal'))calView(true);else if(S.view==='walkie'&&ME)loadVoices()},12000);
 boot();
+P.album='<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>';
+NAV.splice(4,0,['album','Album','album']);
+
+function go(v){
+if(S.map&&v!=='map'){try{S.map.remove()}catch(e){}S.map=null;clearInterval(S.mapT)}
+S.view=v;toggleSide(false);
+$$('.nv').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter');
+({home:homeView,chat:chatView,walkie:walkieView,calendar:calView,album:albumView,finance:finView,map:mapView,profile:profileView,settings:setView})[v]();
+}
+
+function toggleMini(){
+if(!matchMedia('(min-width:861px)').matches)return;
+const m=!ls.get('gg_mini',false);
+ls.set('gg_mini',m);
+$('.shell').classList.toggle('mini',m);
+}
+
+function shell(){
+const u=ME;
+$('#app').innerHTML=`<div class="shell${ls.get('gg_mini',false)?' mini':''}"><aside id="side"><div class="sbtop"><button class="mast-s" id="sbt" aria-label="Expand or collapse the sidebar" title="Expand or collapse"><span class="mono">G</span><span class="mt"><b>GalaGram</b><small>The friends edition</small></span><span class="chv">${ico('chev')}</span></button><button class="sbx" id="sbx" aria-label="Close menu">${ico('x')}</button></div><nav>${NAV.map((n,i)=>`<button class="nv" data-v="${n[0]}" title="${n[1]}"><span class="no">0${i+1}</span>${ico(n[2])}<span class="lb">${n[1]}</span></button>`).join('')}</nav><button class="sbfold" id="sbf" aria-label="Collapse or expand the sidebar" title="Collapse or expand">${ico('chev')}<span>Collapse sidebar</span></button><div class="me">${av(u)}<div><b>${esc(u.name)}</b><small>${esc(u.role||'Member')}</small></div><button id="out" aria-label="Sign out">${ico('logout')}</button></div></aside><div class="main"><header class="top"><button class="iconbtn" id="burger" aria-label="Menu">${ico('menu')}</button><div class="dl">${ico('calendar')}<span id="clock"></span></div><span class="grow"></span><span id="onair"></span><button class="iconbtn" id="scn" aria-label="Scan a QR code" title="Scan a QR code to sign in another device">${ico('scan')}</button><button class="iconbtn" id="tm" aria-label="Toggle theme"></button></header><div class="ticker"><div class="track" id="ticker"></div></div><main id="view"></main></div><div class="scrim" id="scrim"></div></div>`;
+$('#side').onclick=e=>{const b=e.target.closest('.nv');if(b)go(b.dataset.v)};
+$('.me .av').onclick=()=>go('profile');
+$('#burger').onclick=()=>toggleSide(true);
+$('#scrim').onclick=()=>toggleSide(false);
+$('#sbx').onclick=()=>toggleSide(false);
+$('#out').onclick=signOut;
+$('#sbt').onclick=toggleMini;
+$('#sbf').onclick=toggleMini;
+$('#scn').onclick=openScanner;
+$('#tm').onclick=()=>{ls.set('gg_mode',isDark()?'light':'dark');applyTheme();themeIcon();if(['settings','profile'].includes(S.view))go(S.view)};
+themeIcon();tickClock();drawTicker();drawOnAir();
+}
+
+const ALB={items:[],more:false,total:0,who:'all',busy:false,full:{},idx:-1};
+const aDate=s=>s?new Date(s+'T00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'';
+
+function albumView(){
+$('#view').innerHTML=pageHead('Memories','Album',`<div class="vctl"><label class="pri" style="cursor:pointer">${ico('plus')}Add photos<input type="file" id="alf" accept="image/*" multiple hidden></label></div>`)+`<div class="albhead rise"><select id="alw" aria-label="Filter by person"><option value="all">Everyone</option>${USERS.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select><span class="mut" id="alc"></span></div><div class="albgrid" id="alg"></div><div class="vctl" style="margin-top:18px"><button class="ghost" id="alm" hidden>Load more</button></div>`;
+$('#alw').value=ALB.who;
+$('#alw').onchange=e=>{ALB.who=e.target.value;albumLoad(true)};
+$('#alf').onchange=e=>{albumUpload([...e.target.files]);e.target.value=''};
+$('#alg').onclick=e=>{const b=e.target.closest('[data-i]');if(b)albumOpen(+b.dataset.i)};
+$('#alm').onclick=()=>albumLoad(false);
+albumDraw();
+albumLoad(true);
+}
+
+async function albumLoad(reset){
+if(ALB.busy)return;
+ALB.busy=true;
+try{
+const before=reset||!ALB.items.length?0:ALB.items[ALB.items.length-1].id;
+const r=await api('album/list?u='+encodeURIComponent(ALB.who)+'&before='+before);
+ALB.items=reset?r.items:ALB.items.concat(r.items);
+ALB.more=r.more;ALB.total=r.total;
+}catch(e){toast(e.message)}
+ALB.busy=false;
+albumDraw();
+}
+
+function albumDraw(){
+const g=$('#alg');
+if(!g||S.view!=='album')return;
+$('#alc').textContent=ALB.total+(ALB.total===1?' memory':' memories');
+$('#alm').hidden=!ALB.more;
+g.innerHTML=ALB.items.length?ALB.items.map((x,i)=>`<button class="alp" data-i="${i}" aria-label="Open photo"><img src="${x.th}" alt="" loading="lazy"><span class="alo">${av(byId(x.u),'sm')}<span>${esc(x.cap||aDate(x.md))}</span></span></button>`).join(''):'<div class="empty">No memories yet. Add the first photo.</div>';
+}
+
+async function albumPrep(f){
+const img=await loadImg(f);
+const th=scaled(img,360,.7).c.toDataURL('image/jpeg',.7);
+let k=1600,q=.82,out=null;
+for(let n=0;n<5;n++){
+const s=scaled(img,k,q);
+out={data:s.c.toDataURL('image/jpeg',q),w:s.w,h:s.h};
+if(out.data.length<800000)break;
+k=Math.round(k*.8);q=Math.max(.6,q-.06);
+}
+return{...out,th};
+}
+
+async function albumUpload(files){
+const list=files.filter(f=>f.type.startsWith('image/')).slice(0,20);
+if(!list.length){toast('Choose photos to add');return}
+let ok=0;
+for(let i=0;i<list.length;i++){
+toast('Adding photo '+(i+1)+' of '+list.length);
+try{
+const p=await albumPrep(list[i]);
+await api('album/add',{body:{...p,cap:'',md:ymd(new Date(list[i].lastModified||Date.now()))}});
+ok++;
+}catch(e){toast(e.message)}
+}
+if(ok)toast(ok+(ok===1?' memory added':' memories added'));
+albumLoad(true);
+}
+
+function albumOpen(i){
+ALB.idx=i;
+let o=$('#albv');
+if(!o){
+o=document.createElement('div');o.id='albv';
+document.body.appendChild(o);
+o.onclick=albumClick;
+let tx=0;
+o.ontouchstart=e=>{tx=e.changedTouches[0].clientX};
+o.ontouchend=e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>60)albumStep(d<0?1:-1)};
+}
+albumShow();
+}
+
+function albumClose(){const o=$('#albv');if(o)o.remove()}
+
+async function albumShow(){
+const o=$('#albv');if(!o)return;
+const x=ALB.items[ALB.idx];
+if(!x){albumClose();return}
+const u=byId(x.u),mine=x.u===ME.id,id=x.id;
+o.innerHTML=`<div class="avh">${av(u,'sm')}<div class="grow"><b>${esc(u.name)}</b><small>${x.md?aDate(x.md)+' · ':''}${ALB.idx+1} of ${ALB.items.length}</small></div><a class="iconbtn" id="avd" aria-label="Download">${ico('dl')}</a>${mine?`<button class="iconbtn" data-a="edit" aria-label="Edit">${ico('edit')}</button><button class="iconbtn" data-a="del" aria-label="Delete">${ico('trash')}</button>`:''}<button class="iconbtn" data-a="x" aria-label="Close">${ico('x')}</button></div><div class="avm"><button class="avn l" data-a="p" aria-label="Previous"${ALB.idx?'':' hidden'}>${ico('chev')}</button><img id="avi" src="${ALB.full[id]||x.th}" alt=""><button class="avn r" data-a="n" aria-label="Next"${ALB.idx<ALB.items.length-1||ALB.more?'':' hidden'}>${ico('chev')}</button></div><div class="avc">${esc(x.cap)}</div>`;
+if(!ALB.full[id]){
+try{
+const r=await api('album/photo?id='+id);
+ALB.full[id]=r.data;
+const ks=Object.keys(ALB.full);
+if(ks.length>12)delete ALB.full[ks[0]];
+}catch(e){return}
+}
+const cx=ALB.items[ALB.idx];
+if(!cx||cx.id!==id)return;
+const im=$('#avi'),d=$('#avd');
+if(im)im.src=ALB.full[id];
+if(d){d.href=ALB.full[id];d.download='galagram-memory-'+id+'.jpg'}
+}
+
+function albumClick(e){
+const o=$('#albv');
+const b=e.target.closest('[data-a]');
+if(!b){if(e.target===o||e.target.classList.contains('avm'))albumClose();return}
+const a=b.dataset.a;
+if(a==='x')albumClose();
+else if(a==='p')albumStep(-1);
+else if(a==='n')albumStep(1);
+else if(a==='edit')albumEdit();
+else if(a==='del')albumDel();
+}
+
+async function albumStep(d){
+const i=ALB.idx+d;
+if(i>=ALB.items.length&&ALB.more)await albumLoad(false);
+if(i<0||i>=ALB.items.length)return;
+ALB.idx=i;
+albumShow();
+}
+
+function albumEdit(){
+const x=ALB.items[ALB.idx];
+if(!x)return;
+const m=modal(`<div class="card"><h2>Edit memory</h2><label>Caption<textarea id="ec" maxlength="300" placeholder="What is this memory about?">${esc(x.cap)}</textarea></label><label>Date<input type="date" id="ed2" value="${x.md||''}"></label><div class="vctl"><button class="ghost" id="en2">Cancel</button><button class="pri" id="es2">Save</button></div></div>`);
+m.style.zIndex=150;
+$('#en2',m).onclick=()=>m.remove();
+$('#es2',m).onclick=async()=>{
+const cap=$('#ec',m).value.trim(),md=$('#ed2',m).value;
+try{
+await api('album/edit',{body:{id:x.id,cap,md}});
+x.cap=cap;x.md=md;
+m.remove();albumShow();albumDraw();
+}catch(e){toast(e.message)}
+};
+}
+
+async function albumDel(){
+const x=ALB.items[ALB.idx];
+if(!x||!confirm('Delete this memory?'))return;
+try{
+await api('album/del?id='+x.id,{method:'DELETE'});
+delete ALB.full[x.id];
+ALB.items.splice(ALB.idx,1);
+ALB.total=Math.max(0,ALB.total-1);
+if(!ALB.items.length)albumClose();
+else{ALB.idx=Math.min(ALB.idx,ALB.items.length-1);albumShow()}
+albumDraw();
+}catch(e){toast(e.message)}
+}
+
+document.addEventListener('keydown',e=>{
+if(!$('#albv')||$('.modal'))return;
+if(e.key==='Escape')albumClose();
+else if(e.key==='ArrowLeft')albumStep(-1);
+else if(e.key==='ArrowRight')albumStep(1);
+});
