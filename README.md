@@ -26,3 +26,11 @@ Photos, videos (up to 12 MB) and voicemails are stored in D1 in chunks. The new 
 Screen sharing works in calls on desktop browsers. Uploaded songs play through a real audio player that keeps going across the app.
 
 Maps use OpenStreetMap, Nominatim and OSRM (free public services). Locations are shared only when each person turns sharing on.
+
+R2 media storage
+1. wrangler r2 bucket create galagram-media
+2. Keep the [[r2_buckets]] block in wrangler.toml (binding MEDIA)
+3. wrangler pages deploy public --project-name galagram
+If R2 is not enabled yet, turn it on once in the Cloudflare dashboard under R2 Object Storage.
+Until the bucket is connected the app keeps using the database for media.
+Settings > Privacy and data has a button that moves older uploads into R2.

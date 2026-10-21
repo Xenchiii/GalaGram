@@ -2,7 +2,7 @@ const COLORS=['#22c55e','#111827','#ef4444','#ec4899','#2563eb','#9f1239','#6b72
 const PALETTE=['#22c55e','#111827','#ef4444','#ec4899','#2563eb','#9f1239','#6b7280','#92400e','#7c3aed','#4d8f3a','#0ea5e9','#f59e0b','#14b8a6','#1f2a44'];
 const TEXT=[{id:'general',name:'general',icon:'hash'},{id:'random',name:'random',icon:'hash'},{id:'plans',name:'plans',icon:'hash'},{id:'chikahan',name:'Chikahan',icon:'chat'},{id:'movies',name:'Movie Marathon',icon:'film'},{id:'soundtrip',name:'Soundtrip',icon:'music'}];
 const VOICE=[{id:'lounge',name:'Lounge'},{id:'study',name:'Study Room'}];
-const NAV=[['home','Front Page','home'],['chat','Chat','chat'],['walkie','Walkie','radio'],['calendar','Calendar','calendar'],['finance','Finance','wallet'],['map','Map','map'],['profile','Profile','user'],['settings','Settings','settings']];
+const NAV=[['home','Front Page','home'],['chat','Chat','chat'],['walkie','Walkie','radio'],['calendar','Calendar','calendar'],['album','Album','album'],['finance','Finance','wallet'],['map','Map','map'],['profile','Profile','user'],['settings','Settings','settings']];
 const GROUPS=[{id:'gherison',name:'Gherison',members:['ghel','crimson','ika']},{id:'gherecess',name:'Gherecess',members:['ghel','prince','andeng']},{id:'mlcodm',name:'ML/CODM',members:['ian','prince','vhel','jordan']},{id:'romana',name:'Romana Family',members:['prince','ika','ian']}];
 const LOADMSG=['Warming up the press','Setting the type','Inking the headlines','Folding the edition'];
 const P={
@@ -109,7 +109,8 @@ locate:'<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><
 share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" x2="15.4" y1="13.5" y2="17.5"/><line x1="15.4" x2="8.6" y1="6.5" y2="10.5"/>',
 lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
 edit:'<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+album:'<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.3-1.3a2.4 2.4 0 0 0-3.4 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>'
 });
 const $=(s,e=document)=>e.querySelector(s);
 const $$=(s,e=document)=>[...e.querySelectorAll(s)];
@@ -124,7 +125,7 @@ const peso=n=>'₱'+Number(n).toLocaleString('en-PH',{minimumFractionDigits:2,ma
 const av=(u,cls='')=>u.avatar?`<img class="av ${cls}" src="${u.avatar}" alt="">`:`<span class="av ${cls}" style="background:${u.color};color:${inkFor(u.color)}">${esc(u.name[0])}</span>`;
 let ME=null,USERS=[],qrTok=null,qrTimer=null,syncing=false,again=false;
 const cur={sig:0,clip:0};
-const S={locs:[],trips:[],mk:{},tl:[],pos:null,pax:1,round:false,dest:null,plan:null,myTrip:null,mapC:null,finMonth:'',finCat:'all',finQ:'',finDrawn:false,budget:0,map:null,screens:{},scr:null,scrQ:ls.get('gg_scrq','std'),scrAudio:false,pend:[],vm:null,vmA:null,mc:{},custom:[],emv:undefined,calView:'month',heat:false,calHide:null,sel:'',eventsRaw:'',calDrawn:false,music:null,musicRaw:undefined,bubOpen:false,bubSig:'',bubN:0,installEv:null,remote:{},peerCam:{},camOn:true,cam:false,invited:[],incoming:null,callRoom:null,isCaller:false,callStart:null,target:'all',voices:[],holding:false,rec:null,rmic:null,playing:null,lastId:{},latest:{},latestInit:false,unreadSig:'',view:'home',ch:'general',month:new Date(),muted:false,stream:null,ctx:null,actx:null,an:{},meter:null,local:false,loc:'Antipolo, Rizal',cache:{},seenMax:{},voice:{},online:[],fin:[],events:[],vc:null,pcs:{},offered:false,hold:false,pv:0,talk:{},confetti:false};
+const S={r2:false,alb:{cur:'all',u:'all',list:[],items:[],more:false,up:[],total:0,videos:0,cover:''},locs:[],trips:[],mk:{},tl:[],pos:null,pax:1,round:false,dest:null,plan:null,myTrip:null,mapC:null,finMonth:'',finCat:'all',finQ:'',finDrawn:false,budget:0,map:null,screens:{},scr:null,scrQ:ls.get('gg_scrq','std'),scrAudio:false,pend:[],vm:null,vmA:null,mc:{},custom:[],emv:undefined,calView:'month',heat:false,calHide:null,sel:'',eventsRaw:'',calDrawn:false,music:null,musicRaw:undefined,bubOpen:false,bubSig:'',bubN:0,installEv:null,remote:{},peerCam:{},camOn:true,cam:false,invited:[],incoming:null,callRoom:null,isCaller:false,callStart:null,target:'all',voices:[],holding:false,rec:null,rmic:null,playing:null,lastId:{},latest:{},latestInit:false,unreadSig:'',view:'home',ch:'general',month:new Date(),muted:false,stream:null,ctx:null,actx:null,an:{},meter:null,local:false,loc:'Antipolo, Rizal',cache:{},seenMax:{},voice:{},online:[],fin:[],events:[],vc:null,pcs:{},offered:false,hold:false,pv:0,talk:{},confetti:false};
 const FACE='<circle cx="12" cy="12" r="11" fill="#ffd43b"/><circle cx="12" cy="12" r="10.5" fill="none" stroke="#e8a900"/>';
 const FACER='<circle cx="12" cy="12" r="11" fill="#ff7a59"/><circle cx="12" cy="12" r="10.5" fill="none" stroke="#d94a2a"/>';
 const EY='<circle cx="8.3" cy="10" r="1.5" fill="#4a3300"/><circle cx="15.7" cy="10" r="1.5" fill="#4a3300"/>';
@@ -197,7 +198,7 @@ if(!r.ok)throw Object.assign(new Error(d.error||'Request failed'),{status:r.stat
 return d;
 }
 async function loadMe(keep){
-const d=await api('me');ME=d.me;USERS=d.users;if(!keep)Object.assign(cur,d.cur);S.pv=Math.max(0,...USERS.map(u=>u.upd||0));
+const d=await api('me');ME=d.me;USERS=d.users;S.r2=!!d.r2;if(!keep)Object.assign(cur,d.cur);S.pv=Math.max(0,...USERS.map(u=>u.upd||0));
 }
 
 function applyTheme(over){
@@ -335,13 +336,13 @@ $('#yes',m).onclick=async()=>{try{await api('qr/approve',{body:{token:tok}});toa
 
 function shell(){
 const u=ME;
-$('#app').innerHTML=`<div class="shell${ls.get('gg_mini',false)?' mini':''}"><aside id="side"><button class="mast-s" id="sbt" aria-label="Expand or collapse the sidebar" title="Expand or collapse"><span class="mono">G</span><span class="mt"><b>GalaGram</b><small>The friends edition</small></span><span class="chv">${ico('chev')}</span></button><nav>${NAV.map((n,i)=>`<button class="nv" data-v="${n[0]}" title="${n[1]}"><span class="no">0${i+1}</span>${ico(n[2])}<span class="lb">${n[1]}</span></button>`).join('')}</nav><div class="me">${av(u)}<div><b>${esc(u.name)}</b><small>${esc(u.role||'Member')}</small></div><button id="out" aria-label="Sign out">${ico('logout')}</button></div></aside><div class="main"><header class="top"><button class="iconbtn" id="burger" aria-label="Menu">${ico('menu')}</button><div class="dl">${ico('calendar')}<span id="clock"></span></div><span class="grow"></span><span id="onair"></span><button class="iconbtn" id="scn" aria-label="Scan a QR code" title="Scan a QR code to sign in another device">${ico('scan')}</button><button class="iconbtn" id="tm" aria-label="Toggle theme"></button></header><div class="ticker"><div class="track" id="ticker"></div></div><main id="view"></main></div><div class="scrim" id="scrim"></div></div>`;
+$('#app').innerHTML=`<div class="shell${ls.get('gg_mini',false)?' mini':''}"><aside id="side"><button class="mast-s" id="sbt" aria-label="Expand or collapse the sidebar" title="Expand or collapse"><span class="mono">G</span><span class="mt"><b>GalaGram</b><small>The friends edition</small></span><span class="chv">${ico('chev')}</span></button><nav>${NAV.map((n,i)=>`<button class="nv" data-v="${n[0]}" title="${n[1]}"><span class="no">0${i+1}</span>${ico(n[2])}<span class="lb">${n[1]}</span></button>`).join('')}</nav><div class="me">${av(u)}<div><b>${esc(u.name)}</b><small>${esc(u.role||'Member')}</small></div><button id="out" aria-label="Sign out">${ico('logout')}</button></div></aside><div class="main"><header class="top"><button class="iconbtn gbtn" id="burger" aria-label="Open the sidebar" title="Open the sidebar"><span>G</span></button><div class="dl">${ico('calendar')}<span id="clock"></span></div><span class="grow"></span><span id="onair"></span><button class="iconbtn" id="scn" aria-label="Scan a QR code" title="Scan a QR code to sign in another device">${ico('scan')}</button><button class="iconbtn" id="tm" aria-label="Toggle theme"></button></header><div class="ticker"><div class="track" id="ticker"></div></div><main id="view"></main></div><div class="scrim" id="scrim"></div></div>`;
 $('#side').onclick=e=>{const b=e.target.closest('.nv');if(b)go(b.dataset.v)};
 $('.me .av').onclick=()=>go('profile');
 $('#burger').onclick=()=>toggleSide(true);
 $('#scrim').onclick=()=>toggleSide(false);
 $('#out').onclick=signOut;
-$('#sbt').onclick=()=>{if(!matchMedia('(min-width:861px)').matches)return;const m=!ls.get('gg_mini',false);ls.set('gg_mini',m);$('.shell').classList.toggle('mini',m)};
+$('#sbt').onclick=()=>{if(!matchMedia('(min-width:861px)').matches){toggleSide(false);return}const m=!ls.get('gg_mini',false);ls.set('gg_mini',m);$('.shell').classList.toggle('mini',m)};
 $('#scn').onclick=openScanner;
 $('#tm').onclick=()=>{ls.set('gg_mode',isDark()?'light':'dark');applyTheme();themeIcon();if(['settings','profile'].includes(S.view))go(S.view)};
 themeIcon();tickClock();drawTicker();drawOnAir();
@@ -373,8 +374,8 @@ function go(v){
 if(S.map&&v!=='map'){try{S.map.remove()}catch(e){}S.map=null;clearInterval(S.mapT)}
 S.view=v;toggleSide(false);
 $$('.nv').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter');
-({home:homeView,chat:chatView,walkie:walkieView,calendar:calView,finance:finView,map:mapView,profile:profileView,settings:setView})[v]();
+const vw=$('#view');vw.ondragenter=vw.ondragover=vw.ondragleave=vw.ondrop=null;vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter');
+({home:homeView,chat:chatView,walkie:walkieView,calendar:calView,album:albumView,finance:finView,map:mapView,profile:profileView,settings:setView})[v]();
 }
 
 async function refreshUsers(){
@@ -789,6 +790,9 @@ return h;
 }
 async function mediaUrl(id){
 if(S.mc[id])return S.mc[id];
+let info=null;
+try{info=await api('media?id='+id+'&info=1')}catch(e){throw new Error('Could not load that file')}
+if(info.r2)return S.mc[id]='/api/media?id='+id;
 const r=await fetch('/api/media?id='+id,{credentials:'same-origin'});
 if(!r.ok)throw new Error('Could not load that file');
 const mime=r.headers.get('X-Mime')||'application/octet-stream',bin=atob(await r.text()),u=new Uint8Array(bin.length);
@@ -860,8 +864,24 @@ v.onseeked=()=>{try{const k=Math.min(1,320/Math.max(v.videoWidth,v.videoHeight))
 v.src=u;
 });
 }
+function putXhr(url,blob,prog){
+return new Promise((res,rej)=>{
+const x=new XMLHttpRequest();
+x.open('PUT',url);x.withCredentials=true;
+x.upload.onprogress=e=>{if(e.lengthComputable&&prog)prog(e.loaded/e.total)};
+x.onload=()=>{if(x.status>=200&&x.status<300)res();else{let m='Upload failed';try{m=JSON.parse(x.responseText).error||m}catch(e){}rej(Object.assign(new Error(m),{status:x.status}))}};
+x.onerror=()=>rej(new Error('Network error during upload'));
+x.setRequestHeader('Content-Type',blob.type||'application/octet-stream');
+x.send(blob);
+});
+}
 async function uploadBlob(blob,ch,prog){
 const mime=(blob.type||'').split(';')[0];
+if(S.r2){
+const rid2='rr'+rid();
+try{await putXhr(`/api/media?id=${rid2}&ch=${encodeURIComponent(ch)}&mime=${encodeURIComponent(mime)}`,blob,prog);return rid2}
+catch(e){if(e.status!==501)throw e;S.r2=false}
+}
 const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.slice(fr.result.indexOf(',')+1));fr.onerror=()=>rej(new Error('Could not read the file'));fr.readAsDataURL(blob)});
 const id=rid(),CH=380000,n=Math.ceil(b64.length/CH);
 if(n>48)throw new Error('That file is too large');
@@ -874,7 +894,7 @@ return id;
 async function oneFile(f,ch){
 const img=f.type.startsWith('image/'),vid=f.type.startsWith('video/');
 if(!img&&!vid){toast('Only photos and videos can be attached');return}
-if(vid&&f.size>12*1024*1024){toast('Videos can be up to 12 MB');return}
+if(vid&&f.size>(S.r2?95:12)*1024*1024){toast('Videos can be up to '+(S.r2?95:12)+' MB');return}
 if(img&&f.size>30*1024*1024){toast('That photo is too large');return}
 const it={k:rid(),t:img?'img':'vid',th:'',p:0,st:'up',ch};
 S.pend.push(it);drawTray();
@@ -1023,6 +1043,127 @@ const id=await uploadBlob(blob,v.ch);
 queueMsg(v.ch,'',[{t:'aud',id,mime:(blob.type||'audio/webm').split(';')[0],dur:Math.round(dur*10)/10,tx}]);
 }catch(e){toast(e.message)}
 }
+let swx=0,swy=0;
+document.addEventListener('touchstart',e=>{swx=e.touches[0].clientX;swy=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{
+if(matchMedia('(min-width:861px)').matches||!$('#side'))return;
+const dx=e.changedTouches[0].clientX-swx,dy=e.changedTouches[0].clientY-swy;
+if(Math.abs(dy)>60||Math.abs(dx)<70)return;
+const open=$('#side').classList.contains('open');
+if(!open&&swx<26&&dx>0)toggleSide(true);
+else if(open&&dx<0)toggleSide(false);
+},{passive:true});
+const monthKey=t=>new Date(t).toLocaleDateString([],{month:'long',year:'numeric'});
+async function albumView(){
+const A=S.alb;
+try{const r=await api('albums');A.list=r.albums;A.total=r.total;A.videos=r.videos;A.cover=r.cover}catch(e){}
+if(S.view!=='album')return;
+if(A.cur!=='all'&&!A.list.some(a=>a.id===A.cur))A.cur='all';
+try{const r=await api('album_items?album='+A.cur+'&u='+A.u);A.items=r.items;A.more=r.more}catch(e){}
+if(S.view!=='album')return;
+drawAlbum();
+}
+function upTiles(){
+return S.alb.up.map(x=>`<div class="ti up">${x.th?`<img src="${x.th}" alt="">`:`<span class="vph">${ico('image')}</span>`}<i class="tp" style="width:${Math.round(x.p*100)}%"></i></div>`).join('');
+}
+function drawUp(){
+const e=$('#aup');if(!e)return;
+e.hidden=!S.alb.up.length;
+e.innerHTML=S.alb.up.length?`<p class="mut">Uploading ${S.alb.up.length} ${S.alb.up.length===1?'item':'items'}...</p><div class="tray">${upTiles()}</div>`:'';
+}
+function drawAlbum(){
+const A=S.alb,cur=A.list.find(a=>a.id===A.cur),mine=cur&&cur.user_id===ME.id;
+let grid='',last='';
+A.items.forEach((it,i)=>{
+const mk=monthKey(it.ts);
+if(mk!==last){if(last)grid+='</div>';grid+=`<h4 class="mon">${mk}</h4><div class="ag">`;last=mk}
+grid+=`<button class="ai" data-i="${i}" title="Added by ${esc(byId(it.user_id).name)}">${it.th?`<img src="${it.th}" alt="" loading="lazy">`:`<span class="vph">${ico(it.t==='vid'?'video':'image')}</span>`}${it.t==='vid'?`<span class="pl">${ico('play')}${it.dur?`<small>${fmtDur(it.dur)}</small>`:''}</span>`:''}</button>`;
+});
+if(last)grid+='</div>';
+const photos=cur?cur.n:A.total;
+$('#view').innerHTML=pageHead('Memories','Album',`<div class="vctl"><button class="ghost" id="anew">${ico('plus')}New album</button><button class="pri" id="aadd">${ico('image')}Add photos and videos</button></div>`)+`<input type="file" id="afile" accept="image/*,video/*" multiple hidden><div class="albs rise"><button class="acard${A.cur==='all'?' on':''}" data-a="all"><span class="acv">${A.cover?`<img src="${A.cover}" alt="">`:ico('album')}</span><b>All memories</b><small>${A.total} ${A.total===1?'item':'items'}${A.videos?' · '+A.videos+' video'+(A.videos===1?'':'s'):''}</small></button>${A.list.map(a=>`<button class="acard${A.cur===a.id?' on':''}" data-a="${a.id}"><span class="acv">${a.cover?`<img src="${a.cover}" alt="">`:ico('album')}</span><b>${esc(a.name)}</b><small>${a.n} ${a.n===1?'item':'items'} · by ${esc(byId(a.user_id).name)}</small></button>`).join('')}</div><div class="card albm rise" style="--i:1"><div class="albh"><div class="grow"><h2>${cur?esc(cur.name):'All memories'}</h2><small class="mut">${photos} ${photos===1?'item':'items'}${A.cur==='all'?' across every album':''}</small></div><select id="au" aria-label="Filter by person"><option value="all">Everyone</option>${USERS.map(u=>`<option value="${u.id}"${A.u===u.id?' selected':''}>${esc(u.name)}</option>`).join('')}</select>${mine?`<button class="ghost" id="aren">${ico('edit')}Rename</button><button class="ghost" id="adel">${ico('trash')}Delete</button>`:''}</div><div class="upl" id="aup" hidden></div>${A.items.length?grid:`<div class="empty">${A.u!=='all'?'Nothing from this person yet.':'No photos or videos yet. Add the first ones, or drop files anywhere on this page.'}</div>`}${A.more?'<div class="vctl"><button class="ghost" id="amore">Load more</button></div>':''}</div><div class="dropz" id="adz">Drop photos and videos to add them</div>`;
+drawUp();
+const view=$('#view');let dc=0;const dz=$('#adz');
+view.ondragenter=e=>{if([...(e.dataTransfer.types||[])].includes('Files')){dc++;dz.classList.add('on')}};
+view.ondragleave=()=>{dc=Math.max(0,dc-1);if(!dc)dz.classList.remove('on')};
+view.ondragover=e=>e.preventDefault();
+view.ondrop=e=>{e.preventDefault();dc=0;dz.classList.remove('on');if(e.dataTransfer.files.length)albumUpload(e.dataTransfer.files)};
+$('#aadd').onclick=()=>$('#afile').click();
+$('#afile').onchange=e=>{albumUpload(e.target.files);e.target.value=''};
+$('.albs').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;A.cur=b.dataset.a==='all'?'all':+b.dataset.a;albumView()};
+$('#au').onchange=e=>{A.u=e.target.value;albumView()};
+$('#anew').onclick=async()=>{
+const n=prompt('Name your new album');if(!n||!n.trim())return;
+try{const r=await api('albums',{body:{name:n}});A.cur=r.id;albumView()}catch(err){toast(err.message)}
+};
+const rn=$('#aren');if(rn)rn.onclick=async()=>{const n=prompt('Rename album',cur.name);if(!n||!n.trim())return;try{await api('albums',{body:{id:cur.id,name:n}});albumView()}catch(err){toast(err.message)}};
+const dl=$('#adel');if(dl)dl.onclick=async()=>{if(!confirm('Delete "'+cur.name+'" and every photo and video in it?'))return;try{await api('albums?id='+cur.id,{method:'DELETE'});A.cur='all';albumView()}catch(err){toast(err.message)}};
+const mr=$('#amore');if(mr)mr.onclick=async()=>{
+const last=A.items[A.items.length-1];
+try{const r=await api('album_items?album='+A.cur+'&u='+A.u+'&before='+last.id);A.items=A.items.concat(r.items);A.more=r.more;drawAlbum()}catch(err){toast(err.message)}
+};
+$$('.ag').forEach(g=>g.onclick=e=>{const b=e.target.closest('.ai');if(b)albumLightbox(+b.dataset.i)});
+}
+async function albumUpload(files){
+const A=S.alb,target=A.cur==='all'?(A.list[0]&&A.list[0].id):A.cur;
+if(!target){toast('Create an album first');return}
+const list=[...files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
+if(!list.length){toast('Choose photos or videos');return}
+if(A.cur==='all')toast('Adding to '+A.list[0].name);
+let i=0,ok=0;
+const one=async f=>{
+const img=f.type.startsWith('image/');
+if(!img&&f.size>(S.r2?95:12)*1024*1024){toast(f.name+' is over '+(S.r2?95:12)+' MB');return}
+const up={th:'',p:0};A.up.push(up);drawUp();
+try{
+const meta=img?await prepImage(f):await prepVideo(f);
+up.th=meta.th;drawUp();
+const blob=img?meta.blob:f;
+const id=await uploadBlob(blob,'album',p=>{up.p=p;drawUp()});
+await api('album_items',{body:{album:target,items:[{t:img?'img':'vid',id,mime:(blob.type||f.type).split(';')[0],w:meta.w||0,h:meta.h||0,dur:meta.dur||0,th:meta.th||''}]}});
+ok++;
+}catch(e){toast((f.name||'File')+': '+(e.message||'upload failed'))}
+A.up=A.up.filter(x=>x!==up);drawUp();
+};
+await Promise.all(Array.from({length:Math.min(3,list.length)},async()=>{while(i<list.length)await one(list[i++])}));
+if(ok)toast(ok+(ok===1?' item added':' items added'));
+if(S.view==='album')albumView();
+}
+function albumLightbox(start){
+const A=S.alb;let idx=start,tx0=0;
+const o=document.createElement('div');o.id='lbx';o.className='alb';
+o.innerHTML=`<button class="iconbtn lx" aria-label="Close">${ico('x')}</button><button class="lnav l" aria-label="Previous"><span>${ico('chev')}</span></button><div class="lm"></div><button class="lnav r" aria-label="Next"><span>${ico('chev')}</span></button><div class="lcap"></div><div class="lact"></div>`;
+document.body.appendChild(o);
+const close=()=>{o.remove();document.removeEventListener('keydown',kd)};
+const show=async()=>{
+const it=A.items[idx];if(!it)return;
+const my=idx,lm=$('.lm',o);
+lm.innerHTML='<span class="spin"></span>';
+const u=byId(it.user_id),cur=A.list.find(a=>a.id===it.album_id);
+$('.lcap',o).innerHTML=`${av(u,'sm')}<div><b>${esc(u.name)}</b><small>${new Date(it.ts).toLocaleString([],{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:!ls.get('gg_24h',false)})}${cur?' · '+esc(cur.name):''} · ${idx+1} of ${A.items.length}</small></div>`;
+$('.l',o).style.visibility=idx>0?'visible':'hidden';
+$('.r',o).style.visibility=idx<A.items.length-1?'visible':'hidden';
+try{
+const url=await mediaUrl(it.media_id);
+if(my!==idx)return;
+lm.innerHTML=it.t==='vid'?`<video src="${url}" controls autoplay playsinline></video>`:`<img src="${url}" alt="">`;
+const canDel=it.user_id===ME.id||(cur&&cur.user_id===ME.id);
+$('.lact',o).innerHTML=`<a class="iconbtn" href="${url}" download="galagram-${it.media_id}" aria-label="Download">${ico('dl')}</a>${canDel?`<button class="iconbtn" id="ldel" aria-label="Delete">${ico('trash')}</button>`:''}`;
+const d=$('#ldel',o);
+if(d)d.onclick=async()=>{
+if(!confirm('Delete this '+(it.t==='vid'?'video':'photo')+'?'))return;
+try{await api('album_items?id='+it.id,{method:'DELETE'});A.items.splice(idx,1);if(!A.items.length){close();albumView();return}if(idx>=A.items.length)idx=A.items.length-1;show();albumView()}catch(err){toast(err.message)}
+};
+}catch(e){if(my===idx)lm.innerHTML='<p class="mut">Could not load this file.</p>'}
+};
+const go2=d=>{const n=idx+d;if(n>=0&&n<A.items.length){idx=n;show()}};
+const kd=e=>{if(e.key==='Escape')close();else if(e.key==='ArrowLeft')go2(-1);else if(e.key==='ArrowRight')go2(1)};
+document.addEventListener('keydown',kd);
+o.onclick=e=>{if(e.target===o||e.target.closest('.lx'))close();else if(e.target.closest('.l'))go2(-1);else if(e.target.closest('.r'))go2(1)};
+o.addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});
+o.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx0;if(Math.abs(dx)>70)go2(dx<0?1:-1)},{passive:true});
+show();
+}
 async function openScanner(){
 if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Camera is not available in this browser');return}
 const m=document.createElement('div');m.className='modal';
@@ -1142,7 +1283,7 @@ const f=e.target.files[0];e.target.value='';if(!f)return;
 const ext=(f.name.split('.').pop()||'').toLowerCase(),types={mp3:'audio/mpeg',m4a:'audio/mp4',aac:'audio/aac',wav:'audio/wav',ogg:'audio/ogg',flac:'audio/flac',webm:'audio/webm'};
 const type=f.type.startsWith('audio/')?f.type:types[ext];
 if(!type){toast('Choose an audio file');return}
-if(f.size>12*1024*1024){toast('Songs can be up to 12 MB');return}
+if(f.size>(S.r2?40:12)*1024*1024){toast('Songs can be up to '+(S.r2?40:12)+' MB');return}
 toast('Uploading song...');
 try{
 const id=await uploadBlob(new Blob([f],{type}),'soundtrip');
@@ -2093,7 +2234,7 @@ $('#view').innerHTML=pageHead('Preferences','Settings')+`<div class="set"><div c
 <div class="card rise" style="--i:1"><h2>Devices</h2><p class="mut">Where you are signed in right now.</p><div class="devs" id="devs"><p class="mut">Loading...</p></div><button class="ghost" id="sos">Sign out all other devices</button></div>
 <div class="card rise" style="--i:2"><h2>Notifications</h2><div class="row"><div><b>Push notifications</b><p class="mut" id="pnote">Checking...</p></div><button class="sw" id="psw" role="switch" aria-checked="false" aria-label="Push notifications"></button></div><div id="ptypes" hidden><div class="row"><b>Messages</b><button class="sw" data-pref="msg" aria-label="Message alerts"></button></div><div class="row"><b>Voice buzzes</b><button class="sw" data-pref="buzz" aria-label="Buzz alerts"></button></div><div class="row"><b>Calls</b><button class="sw" data-pref="call" aria-label="Call alerts"></button></div><div class="row"><div><b>Quiet hours</b><p class="mut">No push alerts during this window.</p></div><button class="sw" id="qhs" role="switch" aria-label="Quiet hours"></button></div><div class="twocol" id="qht"><label>From<input type="time" id="qhf" value="22:00"></label><label>Until<input type="time" id="qhu" value="07:00"></label></div></div><button class="ghost" id="ptest" hidden>Send a test notification</button>${swRow('gg_sounds',true,'In-app sounds','Chimes for new messages and buzzes.')}</div>
 <div class="card rise" style="--i:3"><h2>Location and trips</h2><div class="row"><div><b>Share my live location</b><p class="mut">Friends see you on the map while GalaGram is open. You can turn it off any time.</p></div><button class="sw${share?' on':''}" id="shs" role="switch" aria-checked="${share}" aria-label="Share my live location"></button></div><label>People going on trips by default<select id="spx">${Array.from({length:10},(_,i)=>`<option value="${i+1}"${ls.get('gg_pax',1)===i+1?' selected':''}>${i+1}</option>`).join('')}</select></label></div>
-<div class="card rise" style="--i:4"><h2>Privacy and data</h2>${swRow('gg_hide',false,'Appear offline','Friends will not see you as online.')}<button class="ghost" id="exp">${ico('dl')}Download my data</button></div>
+<div class="card rise" style="--i:4"><h2>Privacy and data</h2>${swRow('gg_hide',false,'Appear offline','Friends will not see you as online.')}<button class="ghost" id="exp">${ico('dl')}Download my data</button><p class="mut">Photos, videos and voicemails are stored in ${S.r2?'Cloudflare R2, so large videos work.':'the database. Connect R2 to allow large videos.'}</p>${S.r2?`<button class="ghost" id="mig">Move my older photos and videos to R2</button>`:''}</div>
 </div><div class="stack">
 <div class="card rise" style="--i:1"><h2>Appearance</h2><div class="seg" id="sg">${[['light','Light','sun'],['dark','Dark','moon'],['system','System','monitor']].map(a=>`<button data-m="${a[0]}" class="${mode===a[0]?'on':''}">${ico(a[2])}${a[1]}</button>`).join('')}</div><small class="kick">Text size</small><div class="seg" id="sf">${[['s','Small'],['m','Default'],['l','Large']].map(a=>`<button data-fs="${a[0]}" class="${fs===a[0]?'on':''}">${a[1]}</button>`).join('')}</div><small class="kick">Headline style</small><div class="seg two" id="sh">${[['serif','Serif'],['sans','Sans']].map(a=>`<button data-h="${a[0]}" class="${head===a[0]?'on':''}">${a[1]}</button>`).join('')}</div>${swRow('gg_calm',false,'Reduce animations','Turns off motion and confetti.')}${swRow('gg_compact',false,'Compact layout','Tighter spacing to fit more on screen.')}${swRow('gg_ticker',true,'Birthday ticker','The scrolling strip under the top bar.')}${swRow('gg_hc',false,'High contrast','Stronger borders and darker text.')}${swRow('gg_24h',false,'24-hour clock','Show times like 18:30 instead of 6:30 PM.')}<p class="mut">Your dashboard color is set in Profile.</p></div>
 <div class="card rise" style="--i:2"><h2>Chat and buzz</h2>${swRow('gg_enter',true,'Enter sends message','Turn off to send with the button only.')}${swRow('gg_autoplay',true,'Auto-play incoming buzzes','Voice buzzes play as soon as they arrive.')}${swRow('gg_listen',true,'Listen along','Songs set in Soundtrip start playing for you.')}${swRow('gg_transcribe',true,'Transcribe my buzzes','Your words are turned into text so friends can read them.')}<label>Transcription language<select id="slang"><option value="en-US">English (US)</option><option value="en-PH">English (Philippines)</option><option value="fil-PH">Filipino</option></select></label></div>
@@ -2114,6 +2255,25 @@ $('#scn2').onclick=openScanner;
 $('#sos').onclick=async()=>{try{await api('signout-others',{method:'POST',body:{}});toast('Other devices signed out');loadDevs()}catch(err){toast(err.message)}};
 $('#shs').onclick=()=>{const on=!ls.get('gg_share',false);setShare(on);$('#shs').classList.toggle('on',on);$('#shs').setAttribute('aria-checked',on)};
 $('#exp').onclick=async()=>{try{const d=await api('export');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download='galagram-my-data.json';a.click()}catch(err){toast(err.message)}};
+const mg=$('#mig');
+if(mg)mg.onclick=async()=>{
+mg.disabled=true;
+let list=[];
+try{list=await api('media/legacy')}catch(e){toast(e.message);mg.disabled=false;return}
+if(!list.length){toast('Nothing to move. Everything is already in R2.');mg.disabled=false;return}
+let n=0;
+for(const m of list){
+mg.textContent='Moving '+(n+1)+' of '+list.length+'...';
+try{
+const r=await fetch('/api/media?id='+m.id,{credentials:'same-origin'}),bin=atob(await r.text()),u=new Uint8Array(bin.length);
+for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+await putXhr('/api/media?id='+m.id+'&migrate=1',new Blob([u],{type:m.mime}));
+n++;
+}catch(e){}
+}
+toast('Moved '+n+' of '+list.length+' files to R2');
+mg.disabled=false;mg.textContent='Move my older photos and videos to R2';
+};
 $('#cmc').onclick=()=>{Object.values(S.mc).forEach(u=>URL.revokeObjectURL(u));S.mc={};toast('Cached media cleared')};
 $('#rst').onclick=()=>{Object.keys(localStorage).filter(k=>/^gg_(mode|fs|calm|compact|ticker|enter|sounds|autoplay|transcribe|lang|hide|qrlogin|hc|head|24h|listen|pax)$/.test(k)).forEach(k=>localStorage.removeItem(k));applyTheme();themeIcon();tickClock();setView()};
 const inst=$('#inst');
@@ -2149,286 +2309,3 @@ refreshPush();
 
 setInterval(()=>{const a=document.activeElement;if((a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))||$('.modal'))return;if(S.view==='finance'&&ME)finView();else if(S.view==='calendar'&&ME&&!$('.modal'))calView(true);else if(S.view==='walkie'&&ME)loadVoices()},12000);
 boot();
-P.album='<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>';
-NAV.splice(4,0,['album','Album','album']);
-
-function go(v){
-if(S.map&&v!=='map'){try{S.map.remove()}catch(e){}S.map=null;clearInterval(S.mapT)}
-S.view=v;toggleSide(false);
-$$('.nv').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter');
-({home:homeView,chat:chatView,walkie:walkieView,calendar:calView,album:albumView,finance:finView,map:mapView,profile:profileView,settings:setView})[v]();
-}
-
-function toggleMini(){
-if(!matchMedia('(min-width:861px)').matches)return;
-const m=!ls.get('gg_mini',false);
-ls.set('gg_mini',m);
-$('.shell').classList.toggle('mini',m);
-}
-
-function shell(){
-const u=ME;
-$('#app').innerHTML=`<div class="shell${ls.get('gg_mini',false)?' mini':''}"><aside id="side"><div class="sbtop"><button class="mast-s" id="sbt" aria-label="Expand or collapse the sidebar" title="Expand or collapse"><span class="mono">G</span><span class="mt"><b>GalaGram</b><small>The friends edition</small></span><span class="chv">${ico('chev')}</span></button><button class="sbx" id="sbx" aria-label="Close menu">${ico('x')}</button></div><nav>${NAV.map((n,i)=>`<button class="nv" data-v="${n[0]}" title="${n[1]}"><span class="no">0${i+1}</span>${ico(n[2])}<span class="lb">${n[1]}</span></button>`).join('')}</nav><button class="sbfold" id="sbf" aria-label="Collapse or expand the sidebar" title="Collapse or expand">${ico('chev')}<span>Collapse sidebar</span></button><div class="me">${av(u)}<div><b>${esc(u.name)}</b><small>${esc(u.role||'Member')}</small></div><button id="out" aria-label="Sign out">${ico('logout')}</button></div></aside><div class="main"><header class="top"><button class="iconbtn" id="burger" aria-label="Menu">${ico('menu')}</button><div class="dl">${ico('calendar')}<span id="clock"></span></div><span class="grow"></span><span id="onair"></span><button class="iconbtn" id="scn" aria-label="Scan a QR code" title="Scan a QR code to sign in another device">${ico('scan')}</button><button class="iconbtn" id="tm" aria-label="Toggle theme"></button></header><div class="ticker"><div class="track" id="ticker"></div></div><main id="view"></main></div><div class="scrim" id="scrim"></div></div>`;
-$('#side').onclick=e=>{const b=e.target.closest('.nv');if(b)go(b.dataset.v)};
-$('.me .av').onclick=()=>go('profile');
-$('#burger').onclick=()=>toggleSide(true);
-$('#scrim').onclick=()=>toggleSide(false);
-$('#sbx').onclick=()=>toggleSide(false);
-$('#out').onclick=signOut;
-$('#sbt').onclick=toggleMini;
-$('#sbf').onclick=toggleMini;
-$('#scn').onclick=openScanner;
-$('#tm').onclick=()=>{ls.set('gg_mode',isDark()?'light':'dark');applyTheme();themeIcon();if(['settings','profile'].includes(S.view))go(S.view)};
-themeIcon();tickClock();drawTicker();drawOnAir();
-}
-
-Object.assign(P,{
-folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
-folderplus:'<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'
-});
-const ALB={items:[],more:false,total:0,who:'all',busy:false,seq:0,full:{},idx:-1,f:null,folders:[]};
-const aDate=s=>s?new Date(s+'T00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}):'';
-
-function albumView(){
-$('#view').innerHTML=pageHead('Memories','Album',`<div class="vctl"><button class="ghost" id="afn">${ico('folderplus')}New folder</button><label class="pri" style="cursor:pointer">${ico('plus')}Add photos and videos<input type="file" id="alf" accept="image/*,video/*" multiple hidden></label></div>`)+`<div id="alh"></div><div class="albhead rise"><select id="alw" aria-label="Filter by person"><option value="all">Everyone</option>${USERS.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select><span class="mut" id="alc"></span></div><div class="fgrid" id="alfd"></div><div class="albgrid" id="alg"></div><div class="vctl" style="margin-top:18px"><button class="ghost" id="alm" hidden>Load more</button></div>`;
-$('#alw').value=ALB.who;
-$('#alw').onchange=e=>{ALB.who=e.target.value;albumLoad(true)};
-$('#alf').onchange=e=>{albumUpload([...e.target.files]);e.target.value=''};
-$('#afn').onclick=()=>albumFolderDlg(null);
-$('#alg').onclick=e=>{const b=e.target.closest('[data-i]');if(b)albumOpen(+b.dataset.i)};
-$('#alfd').onclick=e=>{const b=e.target.closest('[data-fo]');if(b)albumGoto(+b.dataset.fo)};
-$('#alh').onclick=e=>{
-const b=e.target.closest('[data-a]');if(!b)return;
-const fo=ALB.folders.find(x=>x.id===ALB.f);
-if(b.dataset.a==='back')albumGoto(null);
-else if(b.dataset.a==='ren'&&fo)albumFolderDlg(fo);
-else if(b.dataset.a==='fdel'&&fo)albumFolderDel(fo);
-};
-$('#alm').onclick=()=>albumLoad(false);
-albumDraw();
-albumFolders();
-albumLoad(true);
-}
-
-function albumGoto(f){
-ALB.f=f;ALB.items=[];ALB.total=0;ALB.more=false;
-albumDraw();
-albumLoad(true);
-}
-
-async function albumFolders(){
-try{ALB.folders=await api('album/folders')}catch(e){toast(e.message)}
-albumDraw();
-}
-
-async function albumLoad(reset){
-if(!reset&&ALB.busy)return;
-const my=++ALB.seq;ALB.busy=true;
-try{
-const before=reset||!ALB.items.length?0:ALB.items[ALB.items.length-1].id;
-const r=await api('album/list?u='+encodeURIComponent(ALB.who)+'&f='+(ALB.f||0)+'&before='+before);
-if(my!==ALB.seq)return;
-ALB.items=reset?r.items:ALB.items.concat(r.items);
-ALB.more=r.more;ALB.total=r.total;
-}catch(e){toast(e.message)}
-finally{if(my===ALB.seq)ALB.busy=false}
-albumDraw();
-}
-
-function albumDraw(){
-const g=$('#alg');
-if(!g||S.view!=='album')return;
-const f=ALB.f,fo=f!==null?ALB.folders.find(x=>x.id===f):null,mineF=!!fo&&fo.u===ME.id;
-$('#afn').hidden=f!==null;
-$('#alh').innerHTML=f!==null?`<div class="albcrumb rise"><button class="iconbtn" data-a="back" aria-label="Back to folders"><span class="rot90" style="display:flex">${ico('chev')}</span></button><h2>${esc(fo?fo.name:'Folder')}</h2>${mineF?`<button class="iconbtn" data-a="ren" aria-label="Rename folder">${ico('edit')}</button><button class="iconbtn" data-a="fdel" aria-label="Delete folder">${ico('trash')}</button>`:''}</div>`:'';
-$('#alfd').innerHTML=f===null?ALB.folders.map(x=>`<button class="fold" data-fo="${x.id}">${x.th?`<img src="${x.th}" alt="" loading="lazy">`:`<span class="fph">${ico('folder')}</span>`}<span class="fo"><b>${esc(x.name)}</b><small>${x.n} item${x.n===1?'':'s'}</small></span></button>`).join(''):'';
-$('#alc').textContent=ALB.total+(ALB.total===1?' memory':' memories')+(f===null&&ALB.folders.length?' not in a folder':'');
-$('#alm').hidden=!ALB.more;
-g.innerHTML=ALB.items.length?ALB.items.map((x,i)=>`<button class="alp" data-i="${i}" aria-label="Open ${x.kind==='vid'?'video':'photo'}">${x.th?`<img src="${x.th}" alt="" loading="lazy">`:`<span class="vph">${ico('video')}</span>`}${x.kind==='vid'?`<span class="vbd">${ico('play')}${x.dur?fmtDur(x.dur):'Video'}</span>`:''}<span class="alo">${av(byId(x.u),'sm')}<span>${esc(x.cap||aDate(x.md))}</span></span></button>`).join(''):(ALB.busy?'':`<div class="empty">${f===null&&ALB.folders.length?'Nothing outside the folders.':'Nothing here yet. Add photos and videos.'}</div>`);
-}
-
-function albumFolderDlg(fo){
-const m=modal(`<div class="card"><h2>${fo?'Rename folder':'New folder'}</h2><form id="aff" style="display:grid;gap:14px"><label>Name<input id="afnm" maxlength="40" value="${esc(fo?fo.name:'')}" placeholder="Trip to Baguio" required></label><div class="vctl"><button type="button" class="ghost" id="afc">Cancel</button><button class="pri">${fo?'Save':'Create'}</button></div></form></div>`);
-$('#afc',m).onclick=()=>m.remove();
-$('#aff',m).onsubmit=async e=>{
-e.preventDefault();
-const name=$('#afnm',m).value.trim();if(!name)return;
-try{await api('album/folder',{body:{id:fo?fo.id:0,name}});m.remove();toast(fo?'Folder renamed':'Folder created');albumFolders()}catch(err){toast(err.message)}
-};
-$('#afnm',m).focus();
-}
-
-async function albumFolderDel(fo){
-if(!confirm('Delete the folder "'+fo.name+'"? Its photos and videos are not deleted. They move out of the folder.'))return;
-try{await api('album/folder?id='+fo.id,{method:'DELETE'});toast('Folder deleted');ALB.f=null;await albumFolders();albumLoad(true)}catch(e){toast(e.message)}
-}
-
-async function albumPrep(f){
-const img=await loadImg(f);
-const th=scaled(img,360,.7).c.toDataURL('image/jpeg',.7);
-let k=1600,q=.82,out=null;
-for(let n=0;n<5;n++){
-const s=scaled(img,k,q);
-out={data:s.c.toDataURL('image/jpeg',q),w:s.w,h:s.h};
-if(out.data.length<800000)break;
-k=Math.round(k*.8);q=Math.max(.6,q-.06);
-}
-return{...out,th};
-}
-
-async function albumUpload(files){
-const list=files.filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/')).slice(0,20);
-if(!list.length){toast('Choose photos or videos to add');return}
-const fid=ALB.f||0;
-let ok=0;
-for(let i=0;i<list.length;i++){
-const f=list[i],vid=f.type.startsWith('video/');
-toast((vid?'Uploading video ':'Adding photo ')+(i+1)+' of '+list.length);
-try{
-const md=ymd(new Date(f.lastModified||Date.now()));
-if(vid){
-if(f.size>12*1024*1024){toast(f.name+' is over 12 MB');continue}
-const meta=await prepVideo(f);
-const mid=await uploadBlob(f,'album');
-await api('album/add',{body:{kind:'vid',mid,w:meta.w,h:meta.h,dur:meta.dur,th:meta.th,f:fid,md,cap:''}});
-}else{
-const p=await albumPrep(f);
-await api('album/add',{body:{...p,kind:'img',f:fid,md,cap:''}});
-}
-ok++;
-}catch(e){toast(e.message)}
-}
-if(ok)toast(ok+(ok===1?' memory added':' memories added'));
-albumFolders();
-albumLoad(true);
-}
-
-function albumOpen(i){
-ALB.idx=i;
-let o=$('#albv');
-if(!o){
-o=document.createElement('div');o.id='albv';
-document.body.appendChild(o);
-o.onclick=albumClick;
-let tx=0;
-o.ontouchstart=e=>{tx=e.changedTouches[0].clientX};
-o.ontouchend=e=>{if(e.target.closest('video'))return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>60)albumStep(d<0?1:-1)};
-}
-albumShow();
-}
-
-function albumClose(){const o=$('#albv');if(o)o.remove()}
-
-async function albumShow(){
-const o=$('#albv');if(!o)return;
-const x=ALB.items[ALB.idx];
-if(!x){albumClose();return}
-const u=byId(x.u),mine=x.u===ME.id,id=x.id,vid=x.kind==='vid';
-o.innerHTML=`<div class="avh">${av(u,'sm')}<div class="grow"><b>${esc(u.name)}</b><small>${x.md?aDate(x.md)+' · ':''}${ALB.idx+1} of ${ALB.items.length}</small></div><a class="iconbtn" id="avd" aria-label="Download">${ico('dl')}</a>${mine?`<button class="iconbtn" data-a="move" aria-label="Move to folder">${ico('folder')}</button><button class="iconbtn" data-a="edit" aria-label="Edit">${ico('edit')}</button><button class="iconbtn" data-a="del" aria-label="Delete">${ico('trash')}</button>`:''}<button class="iconbtn" data-a="x" aria-label="Close">${ico('x')}</button></div><div class="avm"><button class="avn l" data-a="p" aria-label="Previous"${ALB.idx?'':' hidden'}>${ico('chev')}</button>${vid?`<div class="avl" id="avl"><span class="spin"></span></div>`:`<img id="avi" src="${ALB.full[id]||x.th}" alt="">`}<button class="avn r" data-a="n" aria-label="Next"${ALB.idx<ALB.items.length-1||ALB.more?'':' hidden'}>${ico('chev')}</button></div><div class="avc">${esc(x.cap)}</div>`;
-if(vid){
-try{
-const url=await mediaUrl(x.mid);
-const cx=ALB.items[ALB.idx];
-if(!cx||cx.id!==id)return;
-const l=$('#avl'),d=$('#avd');
-if(l)l.innerHTML=`<video src="${url}" controls autoplay playsinline></video>`;
-if(d){d.href=url;d.download='galagram-video-'+id}
-}catch(e){toast(e.message)}
-return;
-}
-if(!ALB.full[id]){
-try{
-const r=await api('album/photo?id='+id);
-ALB.full[id]=r.data;
-const ks=Object.keys(ALB.full);
-if(ks.length>12)delete ALB.full[ks[0]];
-}catch(e){return}
-}
-const cx=ALB.items[ALB.idx];
-if(!cx||cx.id!==id)return;
-const im=$('#avi'),d=$('#avd');
-if(im)im.src=ALB.full[id];
-if(d){d.href=ALB.full[id];d.download='galagram-memory-'+id+'.jpg'}
-}
-
-function albumClick(e){
-const o=$('#albv');
-const b=e.target.closest('[data-a]');
-if(!b){if(e.target===o||e.target.classList.contains('avm'))albumClose();return}
-const a=b.dataset.a;
-if(a==='x')albumClose();
-else if(a==='p')albumStep(-1);
-else if(a==='n')albumStep(1);
-else if(a==='edit')albumEdit();
-else if(a==='move')albumMove();
-else if(a==='del')albumDel();
-}
-
-async function albumStep(d){
-const i=ALB.idx+d;
-if(i>=ALB.items.length&&ALB.more)await albumLoad(false);
-if(i<0||i>=ALB.items.length)return;
-ALB.idx=i;
-albumShow();
-}
-
-function albumEdit(){
-const x=ALB.items[ALB.idx];
-if(!x)return;
-const m=modal(`<div class="card"><h2>Edit memory</h2><label>Caption<textarea id="ec" maxlength="300" placeholder="What is this memory about?">${esc(x.cap)}</textarea></label><label>Date<input type="date" id="ed2" value="${x.md||''}"></label><div class="vctl"><button class="ghost" id="en2">Cancel</button><button class="pri" id="es2">Save</button></div></div>`);
-m.style.zIndex=150;
-$('#en2',m).onclick=()=>m.remove();
-$('#es2',m).onclick=async()=>{
-const cap=$('#ec',m).value.trim(),md=$('#ed2',m).value;
-try{
-await api('album/edit',{body:{id:x.id,cap,md}});
-x.cap=cap;x.md=md;
-m.remove();albumShow();albumDraw();
-}catch(e){toast(e.message)}
-};
-}
-
-function albumMove(){
-const x=ALB.items[ALB.idx];
-if(!x)return;
-const m=modal(`<div class="card"><h2>Move to folder</h2><label>Folder<select id="amf"><option value="0">No folder</option>${ALB.folders.map(fo=>`<option value="${fo.id}"${fo.id===x.f?' selected':''}>${esc(fo.name)}</option>`).join('')}</select></label><div class="vctl"><button class="ghost" id="amc">Cancel</button><button class="pri" id="ams">Move</button></div></div>`);
-m.style.zIndex=150;
-$('#amc',m).onclick=()=>m.remove();
-$('#ams',m).onclick=async()=>{
-try{
-await api('album/move',{body:{ids:[x.id],f:+$('#amf',m).value}});
-m.remove();albumClose();toast('Moved');
-albumFolders();albumLoad(true);
-}catch(e){toast(e.message)}
-};
-}
-
-async function albumDel(){
-const x=ALB.items[ALB.idx];
-if(!x||!confirm('Delete this '+(x.kind==='vid'?'video':'photo')+'?'))return;
-try{
-await api('album/del?id='+x.id,{method:'DELETE'});
-delete ALB.full[x.id];
-ALB.items.splice(ALB.idx,1);
-ALB.total=Math.max(0,ALB.total-1);
-if(!ALB.items.length)albumClose();
-else{ALB.idx=Math.min(ALB.idx,ALB.items.length-1);albumShow()}
-albumDraw();albumFolders();
-}catch(e){toast(e.message)}
-}
-
-document.addEventListener('keydown',e=>{
-if(!$('#albv')||$('.modal'))return;
-if(e.key==='Escape')albumClose();
-else if(e.key==='ArrowLeft')albumStep(-1);
-else if(e.key==='ArrowRight')albumStep(1);
-});
-document.addEventListener('click',e=>{
-  if(!matchMedia('(max-width:860px)').matches)return;
-  if(!e.target.closest('.mast-s,.sbfold'))return;
-  e.stopImmediatePropagation();
-  e.preventDefault();
-  document.getElementById('side').classList.remove('open');
-  document.querySelector('.scrim')?.classList.remove('open');
-},true);

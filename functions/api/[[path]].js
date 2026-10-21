@@ -116,13 +116,10 @@ for(const q of [
 "ALTER TABLE users ADD COLUMN extra TEXT DEFAULT '{}'",
 "ALTER TABLE sessions ADD COLUMN ua TEXT DEFAULT ''",
 "CREATE TABLE IF NOT EXISTS locs(user_id TEXT PRIMARY KEY,lat REAL,lng REAL,acc REAL,ts INTEGER,share INTEGER DEFAULT 0)",
-"CREATE TABLE IF NOT EXISTS trips(user_id TEXT PRIMARY KEY,dest TEXT,lat REAL,lng REAL,slat REAL,slng REAL,mode TEXT,fare REAL,eta INTEGER,start_ts INTEGER,status TEXT)",
-"CREATE TABLE IF NOT EXISTS album(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT,kind TEXT DEFAULT 'img',data TEXT DEFAULT '',th TEXT DEFAULT '',mid TEXT DEFAULT '',w INTEGER DEFAULT 0,h INTEGER DEFAULT 0,dur REAL DEFAULT 0,cap TEXT DEFAULT '',md TEXT DEFAULT '',f INTEGER DEFAULT 0,ts INTEGER)",
-"CREATE TABLE IF NOT EXISTS album_folders(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,user_id TEXT,ts INTEGER)",
-"ALTER TABLE album ADD COLUMN kind TEXT DEFAULT 'img'",
-"ALTER TABLE album ADD COLUMN mid TEXT DEFAULT ''",
-"ALTER TABLE album ADD COLUMN dur REAL DEFAULT 0",
-"ALTER TABLE album ADD COLUMN f INTEGER DEFAULT 0"
+"CREATE TABLE IF NOT EXISTS albums(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,user_id TEXT,ts INTEGER)",
+"CREATE TABLE IF NOT EXISTS album_items(id INTEGER PRIMARY KEY AUTOINCREMENT,album_id INTEGER,user_id TEXT,t TEXT,media_id TEXT,mime TEXT,w INTEGER,h INTEGER,dur REAL,th TEXT,caption TEXT,ts INTEGER)",
+"CREATE INDEX IF NOT EXISTS idx_albi ON album_items(album_id,id)",
+"CREATE TABLE IF NOT EXISTS trips(user_id TEXT PRIMARY KEY,dest TEXT,lat REAL,lng REAL,slat REAL,slng REAL,mode TEXT,fare REAL,eta INTEGER,start_ts INTEGER,status TEXT)"
 ]){try{await db.prepare(q).run()}catch(e){}}
 const c=await db.prepare('SELECT COUNT(*) n FROM users').first();
 if(!c.n){
@@ -186,7 +183,7 @@ const users=(await db.prepare(`SELECT ${F} FROM users ORDER BY rowid`).all()).re
 const mine=await db.prepare(`SELECT ${F},username FROM users WHERE id=?`).bind(me.id).first();
 const c=await db.prepare('SELECT COALESCE(MAX(id),0) n FROM signals').first();
 const k=await db.prepare('SELECT COALESCE(MAX(id),0) n FROM clips').first();
-return J({me:mine,users,cur:{sig:c.n,clip:k.n}});
+return J({me:mine,users,cur:{sig:c.n,clip:k.n},r2:!!env.MEDIA});
 }
 case 'POST profile':{
 const b=await body(),name=String(b.name||'').trim().slice(0,24),role=String(b.role||'').trim().slice(0,40),bio=String(b.bio||'').trim().slice(0,240);
@@ -270,83 +267,46 @@ if(ex&&ex.user_id!==me.id)return J({error:'Invalid upload'},400);
 await db.prepare('INSERT OR REPLACE INTO media(id,seq,ch,mime,data,user_id,ts) VALUES(?,?,?,?,?,?,?)').bind(id,seq,ch,mime,d,me.id,now).run();
 return J({ok:true});
 }
+case 'GET media/legacy':
+return J((await db.prepare("SELECT id,MAX(mime) mime,COUNT(*) c FROM media WHERE user_id=? AND data!='' GROUP BY id").bind(me.id).all()).results);
+case 'PUT media':{
+if(!env.MEDIA)return J({error:'r2-missing'},501);
+const q=url.searchParams,id=String(q.get('id')||'');
+const len=+request.headers.get('Content-Length')||0;
+if(len<1||len>95*1024*1024)return J({error:'That file is too large (95 MB limit)'},413);
+if(q.get('migrate')==='1'){
+const row=await db.prepare('SELECT ch,mime,data,user_id FROM media WHERE id=? ORDER BY seq LIMIT 1').bind(id).first();
+if(!row||row.user_id!==me.id||row.data==='')return J({error:'Nothing to move'},400);
+await env.MEDIA.put('m/'+id,request.body,{httpMetadata:{contentType:row.mime},customMetadata:{ch:row.ch,u:me.id}});
+await db.batch([db.prepare('DELETE FROM media WHERE id=?').bind(id),db.prepare("INSERT INTO media(id,seq,ch,mime,data,user_id,ts) VALUES(?,0,?,?,'',?,?)").bind(id,row.ch,row.mime,me.id,now)]);
+return J({ok:true});
+}
+const ch=String(q.get('ch')||''),mime=String(q.get('mime')||'');
+if(!/^rr[a-z0-9]{8,22}$/.test(id)||!(ch==='album'||okCh(ch))||!MIMES.includes(mime))return J({error:'Invalid upload'},400);
+const ex=await db.prepare('SELECT user_id FROM media WHERE id=? LIMIT 1').bind(id).first();
+if(ex&&ex.user_id!==me.id)return J({error:'Invalid upload'},400);
+await env.MEDIA.put('m/'+id,request.body,{httpMetadata:{contentType:mime},customMetadata:{ch,u:me.id}});
+await db.prepare("INSERT OR REPLACE INTO media(id,seq,ch,mime,data,user_id,ts) VALUES(?,0,?,?,'',?,?)").bind(id,ch,mime,me.id,now).run();
+return J({ok:true});
+}
 case 'GET media':{
-const rows=(await db.prepare('SELECT ch,mime,data FROM media WHERE id=? ORDER BY seq').bind(String(url.searchParams.get('id')||'')).all()).results;
-if(!rows.length||(rows[0].ch!=='album'&&!okCh(rows[0].ch)))return J({error:'Not found'},404);
-return new Response(rows.map(r=>r.data).join(''),{headers:{'Content-Type':'text/plain','X-Mime':rows[0].mime,'Cache-Control':'private, max-age=86400'}});
+const id=String(url.searchParams.get('id')||'');
+const first=await db.prepare('SELECT ch,mime,data FROM media WHERE id=? ORDER BY seq LIMIT 1').bind(id).first();
+if(!first||!(first.ch==='album'||okCh(first.ch)))return J({error:'Not found'},404);
+const r2=first.data==='';
+if(url.searchParams.get('info'))return J({r2,mime:first.mime});
+if(r2){
+if(!env.MEDIA)return J({error:'Media storage is not connected'},503);
+const o=await env.MEDIA.get('m/'+id,{range:request.headers});
+if(!o)return J({error:'Not found'},404);
+const h=new Headers();
+o.writeHttpMetadata(h);
+h.set('etag',o.httpEtag);h.set('Accept-Ranges','bytes');h.set('Cache-Control','private, max-age=86400');
+if(o.range){const off=o.range.offset!==undefined?o.range.offset:Math.max(0,o.size-(o.range.suffix||0)),ln=o.range.length!==undefined?o.range.length:o.size-off;h.set('Content-Range','bytes '+off+'-'+(off+ln-1)+'/'+o.size);return new Response(o.body,{status:206,headers:h})}
+return new Response(o.body,{headers:h});
 }
-case 'GET album/folders':
-return J((await db.prepare('SELECT f.id,f.name,f.user_id u,(SELECT COUNT(*) FROM album a WHERE a.f=f.id) n,(SELECT a.th FROM album a WHERE a.f=f.id ORDER BY a.id DESC LIMIT 1) th FROM album_folders f ORDER BY f.name COLLATE NOCASE').all()).results);
-case 'POST album/folder':{
-const b=await body(),name=String(b.name||'').trim().slice(0,40);
-if(!name)return J({error:'Give the folder a name'},400);
-if(+b.id){
-const r=await db.prepare('UPDATE album_folders SET name=? WHERE id=? AND user_id=?').bind(name,+b.id,me.id).run();
-return r.meta.changes?J({ok:true}):J({error:'Only the creator can rename this folder'},403);
-}
-await db.prepare('INSERT INTO album_folders(name,user_id,ts) VALUES(?,?,?)').bind(name,me.id,now).run();
-return J({ok:true});
-}
-case 'DELETE album/folder':{
-const id=+url.searchParams.get('id');
-const fo=await db.prepare('SELECT id FROM album_folders WHERE id=? AND user_id=?').bind(id,me.id).first();
-if(!fo)return J({error:'Only the creator can delete this folder'},403);
-await db.batch([db.prepare('UPDATE album SET f=0 WHERE f=?').bind(id),db.prepare('DELETE FROM album_folders WHERE id=?').bind(id)]);
-return J({ok:true});
-}
-case 'POST album/move':{
-const b=await body();
-let f=+b.f||0;
-if(f&&!(await db.prepare('SELECT id FROM album_folders WHERE id=?').bind(f).first()))f=0;
-const ids=(Array.isArray(b.ids)?b.ids:[]).map(Number).filter(x=>x>0).slice(0,50);
-if(!ids.length)return J({error:'Nothing to move'},400);
-await db.prepare(`UPDATE album SET f=? WHERE user_id=? AND id IN (${ids.map(()=>'?').join(',')})`).bind(f,me.id,...ids).run();
-return J({ok:true});
-}
-case 'GET album/list':{
-const q=url.searchParams,who=q.get('u')||'all',f=+q.get('f')||0,before=+q.get('before')||0;
-const w=['f=?'],a=[f];
-if(ALL.includes(who)){w.push('user_id=?');a.push(who)}
-const where=w.join(' AND ');
-const tot=await db.prepare(`SELECT COUNT(*) n FROM album WHERE ${where}`).bind(...a).first();
-const rows=(await db.prepare(`SELECT id,user_id u,kind,th,cap,md,mid,dur,w,h,f FROM album WHERE ${where}${before?' AND id<?':''} ORDER BY id DESC LIMIT 31`).bind(...a,...(before?[before]:[])).all()).results;
-return J({items:rows.slice(0,30),more:rows.length>30,total:tot.n});
-}
-case 'GET album/photo':{
-const r=await db.prepare("SELECT data FROM album WHERE id=? AND kind='img'").bind(+url.searchParams.get('id')).first();
-return r?J({data:r.data}):J({error:'Not found'},404);
-}
-case 'POST album/add':{
-const b=await body(),vid=b.kind==='vid';
-const th=String(b.th||''),cap=String(b.cap||'').trim().slice(0,300),md=/^\d{4}-\d{2}-\d{2}$/.test(b.md||'')?b.md:'';
-if(th&&(!th.startsWith('data:image/')||th.length>80000))return J({error:'Invalid thumbnail'},400);
-let f=+b.f||0;
-if(f&&!(await db.prepare('SELECT id FROM album_folders WHERE id=?').bind(f).first()))f=0;
-let data='',mid='';
-if(vid){
-mid=String(b.mid||'');
-const ok=await db.prepare("SELECT mime FROM media WHERE id=? AND ch='album' AND user_id=? LIMIT 1").bind(mid,me.id).first();
-if(!ok||!String(ok.mime).startsWith('video/'))return J({error:'Upload the video first'},400);
-}else{
-data=String(b.data||'');
-if(!data.startsWith('data:image/')||data.length>900000||!th)return J({error:'Invalid photo'},400);
-}
-const r=await db.prepare('INSERT INTO album(user_id,kind,data,th,mid,w,h,dur,cap,md,f,ts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(me.id,vid?'vid':'img',data,th,mid,Math.round(+b.w)||0,Math.round(+b.h)||0,Math.min(+b.dur||0,3600),cap,md,f,now).run();
-return J({ok:true,id:r.meta.last_row_id});
-}
-case 'POST album/edit':{
-const b=await body(),md=/^\d{4}-\d{2}-\d{2}$/.test(b.md||'')?b.md:'';
-await db.prepare('UPDATE album SET cap=?,md=? WHERE id=? AND user_id=?').bind(String(b.cap||'').trim().slice(0,300),md,+b.id,me.id).run();
-return J({ok:true});
-}
-case 'DELETE album/del':{
-const id=+url.searchParams.get('id');
-const r=await db.prepare('SELECT mid FROM album WHERE id=? AND user_id=?').bind(id,me.id).first();
-if(!r)return J({error:'Not found'},404);
-const st=[db.prepare('DELETE FROM album WHERE id=?').bind(id)];
-if(r.mid)st.push(db.prepare("DELETE FROM media WHERE id=? AND ch='album'").bind(r.mid));
-await db.batch(st);
-return J({ok:true});
+const rows=(await db.prepare('SELECT data FROM media WHERE id=? ORDER BY seq').bind(id).all()).results;
+return new Response(rows.map(r=>r.data).join(''),{headers:{'Content-Type':'text/plain','X-Mime':first.mime,'Cache-Control':'private, max-age=86400'}});
 }
 case 'GET emojis':
 return J((await db.prepare('SELECT name,data FROM emojis ORDER BY ts').all()).results);
@@ -362,6 +322,68 @@ return J({ok:true});
 case 'DELETE emojis':
 await db.prepare('DELETE FROM emojis WHERE name=? AND user_id=?').bind(String(url.searchParams.get('name')||''),me.id).run();
 return J({ok:true});
+case 'GET albums':{
+const Q='SELECT a.id,a.name,a.user_id,a.ts,(SELECT COUNT(*) FROM album_items i WHERE i.album_id=a.id) n,(SELECT th FROM album_items i WHERE i.album_id=a.id ORDER BY i.id DESC LIMIT 1) cover FROM albums a ORDER BY a.ts DESC';
+let r=(await db.prepare(Q).all()).results;
+if(!r.length){await db.prepare('INSERT INTO albums(name,user_id,ts) VALUES(?,?,?)').bind('Group photos',me.id,now).run();r=(await db.prepare(Q).all()).results}
+const tot=await db.prepare("SELECT COUNT(*) n,COALESCE(SUM(CASE WHEN t='vid' THEN 1 ELSE 0 END),0) v FROM album_items").first();
+const cv=await db.prepare('SELECT th FROM album_items ORDER BY id DESC LIMIT 1').first();
+return J({albums:r,total:tot.n||0,videos:tot.v||0,cover:cv?cv.th:''});
+}
+case 'POST albums':{
+const b=await body(),name=String(b.name||'').trim().slice(0,40);
+if(!name)return J({error:'Give the album a name'},400);
+if(+b.id){
+const a=await db.prepare('SELECT user_id FROM albums WHERE id=?').bind(+b.id).first();
+if(!a||a.user_id!==me.id)return J({error:'Only the person who made it can rename it'},403);
+await db.prepare('UPDATE albums SET name=? WHERE id=?').bind(name,+b.id).run();
+return J({ok:true,id:+b.id});
+}
+const r=await db.prepare('INSERT INTO albums(name,user_id,ts) VALUES(?,?,?)').bind(name,me.id,now).run();
+return J({ok:true,id:r.meta.last_row_id});
+}
+case 'DELETE albums':{
+const id=+url.searchParams.get('id'),a=await db.prepare('SELECT user_id FROM albums WHERE id=?').bind(id).first();
+if(!a)return J({ok:true});
+if(a.user_id!==me.id)return J({error:'Only the person who made it can delete it'},403);
+const mids=(await db.prepare('SELECT media_id FROM album_items WHERE album_id=?').bind(id).all()).results.map(x=>'m/'+x.media_id);
+await db.batch([db.prepare('DELETE FROM media WHERE id IN (SELECT media_id FROM album_items WHERE album_id=?)').bind(id),db.prepare('DELETE FROM album_items WHERE album_id=?').bind(id),db.prepare('DELETE FROM albums WHERE id=?').bind(id)]);
+if(env.MEDIA&&mids.length)bg((async()=>{for(let i=0;i<mids.length;i+=500)await env.MEDIA.delete(mids.slice(i,i+500))})());
+return J({ok:true});
+}
+case 'GET album_items':{
+const q=url.searchParams,alb=q.get('album')||'all',u=q.get('u')||'all',bf=+q.get('before')||0,bnd=[];
+let sql='SELECT i.id,i.album_id,i.user_id,i.t,i.media_id,i.mime,i.w,i.h,i.dur,i.th,i.caption,i.ts FROM album_items i WHERE 1=1';
+if(alb!=='all'){sql+=' AND i.album_id=?';bnd.push(+alb)}
+if(ALL.includes(u)){sql+=' AND i.user_id=?';bnd.push(u)}
+if(bf){sql+=' AND i.id<?';bnd.push(bf)}
+sql+=' ORDER BY i.id DESC LIMIT 61';
+const rows=(await db.prepare(sql).bind(...bnd).all()).results;
+return J({items:rows.slice(0,60),more:rows.length>60});
+}
+case 'POST album_items':{
+const b=await body(),aid=+b.album,a=await db.prepare('SELECT id,name FROM albums WHERE id=?').bind(aid).first();
+if(!a)return J({error:'Album not found'},404);
+let its=cleanAtt(b.items).filter(x=>x.t==='img'||x.t==='vid');
+if(!its.length)return J({error:'Nothing to add'},400);
+const ids=[...new Set(its.map(x=>x.id))];
+const ok=new Set((await db.prepare(`SELECT DISTINCT id FROM media WHERE ch='album' AND user_id=? AND id IN (${ids.map(()=>'?').join(',')})`).bind(me.id,...ids).all()).results.map(x=>x.id));
+its=its.filter(x=>ok.has(x.id));
+if(!its.length)return J({error:'The upload did not finish'},400);
+const recent=await db.prepare('SELECT COUNT(*) n FROM album_items WHERE album_id=? AND user_id=? AND ts>?').bind(aid,me.id,now-180000).first();
+await db.batch(its.map(x=>db.prepare('INSERT INTO album_items(album_id,user_id,t,media_id,mime,w,h,dur,th,caption,ts) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(aid,me.id,x.t,x.id,x.mime,x.w,x.h,x.dur,x.th,'',now)));
+if(!recent.n)bg(notify(db,ALL.filter(i=>i!==me.id),'msg',{title:me.name+' added to the album',body:a.name,tag:'album'},origin));
+return J({ok:true});
+}
+case 'DELETE album_items':{
+const id=+url.searchParams.get('id');
+const it=await db.prepare('SELECT i.user_id,i.media_id,a.user_id au FROM album_items i JOIN albums a ON a.id=i.album_id WHERE i.id=?').bind(id).first();
+if(!it)return J({ok:true});
+if(it.user_id!==me.id&&it.au!==me.id)return J({error:'You can only delete your own photos'},403);
+await db.batch([db.prepare('DELETE FROM album_items WHERE id=?').bind(id),db.prepare('DELETE FROM media WHERE id=? AND NOT EXISTS(SELECT 1 FROM album_items WHERE media_id=?)').bind(it.media_id,it.media_id)]);
+if(env.MEDIA&&!(await db.prepare('SELECT 1 x FROM media WHERE id=? LIMIT 1').bind(it.media_id).first()))bg(env.MEDIA.delete('m/'+it.media_id));
+return J({ok:true});
+}
 case 'GET finance':
 return J((await db.prepare('SELECT id,user_id,type,details,amount,date,cat,split,note,to_id FROM finance ORDER BY date DESC,id DESC LIMIT 1500').all()).results);
 case 'POST finance':{
